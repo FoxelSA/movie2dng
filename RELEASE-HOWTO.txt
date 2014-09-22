@@ -1,0 +1,5 @@
+1. Increment version number on src/movie2dng.cpp
+2. Run dch <version> to increment debian/changelog.
+3. Run debuild -S -I
+4. Commit
+5. Upload to ppa: dput ppa:phsilva/ppa movie2dng_X.YY_source.changes  

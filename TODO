@@ -1,0 +1,18 @@
+TODO
+====
+
+* Fix EXIF handling, shoud copy all EXIF tags from JP4 to DNG.
+* Color matrix, currently hard wired from elphel_dng.c.
+* Exposure (Baseline exposure)
+* HDR may use BayerGreenSplit
+* Camera identifier (Unique, Make, SerialNumber)
+* Noise profile
+* Lens profile
+* Fix size (cropping?)
+
+* Use memory buffer: frame->jpeg->dng->zip
+* Faster deblock using vectorization
+* CinemaDNG
+
+- crop
+- rotate
