@@ -23,6 +23,8 @@
 #include <string>
 using std::string;
 
+#define CALC_FFMPEG_VERSION(a,b,c) ( a<<16 | b<<8 | c )
+
 extern "C" {
 #include <libavformat/avformat.h>
 }

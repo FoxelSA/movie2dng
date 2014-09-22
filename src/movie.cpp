@@ -60,12 +60,24 @@ int Movie::open(const string& filename) {
 
   av_register_all();
 
-  if (av_open_input_file(&ctx, filename.c_str(), NULL, 0, NULL) != 0) {
+#if LIBAVFORMAT_BUILD < CALC_FFMPEG_VERSION(52, 111, 0)
+  int err=av_open_input_file(&ctx, filename.c_str(), NULL, 0, NULL);
+#else
+  int err=avformat_open_input(&ctx, filename.c_str(), NULL, NULL);
+#endif
+  
+  if (err) {
     fprintf(stderr, "ERROR: Cannot open file: '%s'.\n", filename.c_str());
     return 0;
   }
 
-  if (av_find_stream_info(ctx) < 0) {
+#if LIBAVFORMAT_BUILD < CALC_FFMPEG_VERSION(53, 3, 0)
+  err=av_find_stream_info(ctx);
+#else
+  err=avformat_find_stream_info(ctx,NULL);
+#endif
+
+  if (err < 0) {
     fprintf(stderr, "ERROR: Cannot find stream info.\n");
     return 0;
   }
@@ -77,7 +89,13 @@ int Movie::open(const string& filename) {
     return 0;
   }
   
-  if (avcodec_open(codecCtx, codec) < 0) {
+#if LIBAVFORMAT_BUILD < CALC_FFMPEG_VERSION(53, 3, 0)
+  err=avcodec_open(codecCtx, codec);
+#else
+  err=avcodec_open2(codecCtx, codec,NULL);
+#endif
+
+  if (err < 0) {
     fprintf(stderr, "ERROR: Cannot open codec.");
     return 0;
   }
