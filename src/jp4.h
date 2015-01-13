@@ -66,7 +66,7 @@ class JP4 {
   JP4();
   ~JP4();
 
-  void open(const string& _filename);
+  void open(const string& _filename, bool stripEXIF = false);
 
   const string& filename() const;
 

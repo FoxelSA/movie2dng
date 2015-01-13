@@ -7,12 +7,12 @@
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-  
+
   movie2dng is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with movie2dng.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -67,7 +67,7 @@ bool JP4::linear() const {
   return _linear;
 }
 
-void JP4::open(const string& _filename) {
+void JP4::open(const string& _filename, bool stripEXIF) {
 
   this->_filename = string(_filename);
 
@@ -92,7 +92,7 @@ void JP4::open(const string& _filename) {
   dinfo.out_color_space = JCS_GRAYSCALE;
 
   // save raw APP1 data (if any)
-  if (dinfo.marker_list) {
+  if (dinfo.marker_list && !stripEXIF) {
     _raw_app1_length = dinfo.marker_list[0].data_length;
     _raw_app1 = new unsigned char[_raw_app1_length];
     memcpy(_raw_app1, dinfo.marker_list[0].data, _raw_app1_length);
@@ -102,7 +102,7 @@ void JP4::open(const string& _filename) {
   this->_height = dinfo.image_height;
 
   buffer = (*dinfo.mem->alloc_sarray)((j_common_ptr)&dinfo, JPOOL_IMAGE, width(), 1);
-  
+
   _data = new unsigned short[width()*height()];
 
   jpeg_start_decompress (&dinfo);
@@ -116,7 +116,10 @@ void JP4::open(const string& _filename) {
   }
 
   // EXIF
-  readMakerNote();
+  if( !stripEXIF )
+  {
+      readMakerNote();
+  }
 
   // JP4 deblocking
   // from http://code.google.com/p/gst-plugins-elphel/source/browse/trunk/jp462bayer/src/gstjp462bayer.c
@@ -174,9 +177,9 @@ void JP4::readMakerNote() {
 
   for (int i = 0; i < 4; i++) {
     // channel gain  8.16 (0x10000 - 1.0). Combines both analog gain and digital scaling
-    _makerNote.gain[i] = makerNote[i] / 65536.0;  
- 
-    // (P_PIXEL_LOW<<24) | (P_GAMMA <<16) and 16-bit (6.10) scale for gamma tables, 
+    _makerNote.gain[i] = makerNote[i] / 65536.0;
+
+    // (P_PIXEL_LOW<<24) | (P_GAMMA <<16) and 16-bit (6.10) scale for gamma tables,
     _makerNote.gamma_scale[i] = (makerNote[i+4] & 0xffff);
     _makerNote.gamma[i]       = ((makerNote[i+4]>>16) & 0xff) / 100.0;
     _makerNote.black[i]       =  (makerNote[i+4]>>24) / 256.0;
@@ -235,7 +238,7 @@ void JP4::flipX() {
   }
 
 }
- 
+
 void JP4::flipY() {
 
   for (unsigned int y = 0; y < _height; y++) {
@@ -260,7 +263,7 @@ void JP4::writePGM(const string& pgmFilename) const {
   for (unsigned int i = 0; i < _height; i++) {
     for (unsigned int j = 0; j < _width; j++) {
       fprintf(pgm, "%d ", _data[i*_width + j]);
-    }   
+    }
     fprintf(pgm, "\n");
   }
 
