@@ -55,7 +55,7 @@ void help(const char* program_name) {
          "\t--frames N         convert only the N-th first frames.\n"
          "\t--shift N,         Bayer shift, 0-3 (default: detect from MakerNote).\n"
          "\t--jpeg-quality N   set --jpeg quality factor (1...100), default=100.\n"
-         "\t--strip-exif       Strip image EXIF tags.\n"
+         "\t--no-dng-rotation  Don't apply DNG rotations.\n"
          "\t-v, --version      display program version information.\n"
          "\t-h, --help         show this help message.\n", program_name);
 }
@@ -79,7 +79,7 @@ const char CMD_STDOUT       = -105;
 const char CMD_JPEG         = -106;
 const char CMD_JPEG_QUALITY = -107;
 const char CMD_BAYER_SHIFT  = -108;
-const char CMD_STRIP_EXIF  = -109;
+const char CMD_DISABLE_DNG_ROTATION = -109;
 
 int main (int argc, char** argv) {
 
@@ -94,7 +94,7 @@ int main (int argc, char** argv) {
                                  {"frames", 1, NULL, CMD_N_FRAMES},
                                  {"shift", 1, NULL, CMD_BAYER_SHIFT},
                                  {"jpeg-quality", 1, NULL, CMD_JPEG_QUALITY},
-                                 {"strip-exif", 0, NULL, CMD_STRIP_EXIF},
+                                 {"no-dng-rotation", 0, NULL, CMD_DISABLE_DNG_ROTATION},
                                  {0, 0, 0, 0}};
   int option = 0;
   int option_index;
@@ -103,7 +103,7 @@ int main (int argc, char** argv) {
   bool save_dng = false;
   bool save_pgm = false;
   bool save_jpeg = false;
-  bool strip_exif = false;
+  bool disable_dng_rotations = false;
 
   bool save_to_stdout = false;
 
@@ -135,8 +135,8 @@ int main (int argc, char** argv) {
         exit(1);
       }
       break;
-    case CMD_STRIP_EXIF:
-      strip_exif = true;
+    case CMD_DISABLE_DNG_ROTATION:
+      disable_dng_rotations = true;
       break;
     case CMD_DNG:
       save_dng = true;
@@ -258,10 +258,10 @@ int main (int argc, char** argv) {
       }
 
       JP4 jp4;
-      jp4.open(jp4Filename, strip_exif);
+      jp4.open(jp4Filename);
 
       if (save_dng)
-        DNGWriter::write(jp4, dngFilename, bayer_shift);
+        DNGWriter::write(jp4, dngFilename, bayer_shift, disable_dng_rotations);
 
       if (save_pgm)
         jp4.writePGM(pgmFilename);
@@ -310,11 +310,11 @@ int main (int argc, char** argv) {
       fclose(fd);
 
       JP4 jp4;
-      jp4.open(jp4Filename, strip_exif);
+      jp4.open(jp4Filename);
 
       // convert to DNG
       if (save_dng)
-        DNGWriter::write(jp4, dngFilename, bayer_shift);
+        DNGWriter::write(jp4, dngFilename, bayer_shift, disable_dng_rotations);
 
       if (save_pgm)
         jp4.writePGM(pgmFilename);

@@ -67,7 +67,7 @@ bool JP4::linear() const {
   return _linear;
 }
 
-void JP4::open(const string& _filename, bool stripEXIF) {
+void JP4::open(const string& _filename) {
 
   this->_filename = string(_filename);
 
@@ -92,7 +92,7 @@ void JP4::open(const string& _filename, bool stripEXIF) {
   dinfo.out_color_space = JCS_GRAYSCALE;
 
   // save raw APP1 data (if any)
-  if (dinfo.marker_list && !stripEXIF) {
+  if (dinfo.marker_list) {
     _raw_app1_length = dinfo.marker_list[0].data_length;
     _raw_app1 = new unsigned char[_raw_app1_length];
     memcpy(_raw_app1, dinfo.marker_list[0].data, _raw_app1_length);
@@ -116,10 +116,7 @@ void JP4::open(const string& _filename, bool stripEXIF) {
   }
 
   // EXIF
-  if( !stripEXIF )
-  {
-      readMakerNote();
-  }
+  readMakerNote();
 
   // JP4 deblocking
   // from http://code.google.com/p/gst-plugins-elphel/source/browse/trunk/jp462bayer/src/gstjp462bayer.c

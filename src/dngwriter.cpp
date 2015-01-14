@@ -7,12 +7,12 @@
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-  
+
   movie2dng is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with movie2dng.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -49,54 +49,54 @@
 using std::vector;
 
 inline void SET_DNG_TAG_STRING(const JP4& jp4, ExifTag TAG, dng_string* DEST) {
-  if (jp4.hasTag(TAG)) {                     
-    dng_string s;                            
-    s.Set(jp4.getTagString(TAG).c_str());    
-    *DEST = s;                          
-  }                                          
+  if (jp4.hasTag(TAG)) {
+    dng_string s;
+    s.Set(jp4.getTagString(TAG).c_str());
+    *DEST = s;
+  }
 }
 
 inline void SET_DNG_TAG_UINT32(const JP4& jp4, ExifTag TAG, uint32* DEST) {
-  if (jp4.hasTag(TAG)) {                     
-    *DEST = jp4.getTagUInt(TAG);        
-  }                                     
+  if (jp4.hasTag(TAG)) {
+    *DEST = jp4.getTagUInt(TAG);
+  }
 }
 
 inline void SET_DNG_TAG_URATIONAL(const JP4& jp4, ExifTag TAG, dng_urational* DEST) {
-  if (jp4.hasTag(TAG)) {                     
-    unsigned int n = 0; unsigned int d = 1;                    
-    jp4.getTagURational(TAG, &n, &d);         
-    *DEST = dng_urational(n,d);          
-  }                                          
+  if (jp4.hasTag(TAG)) {
+    unsigned int n = 0; unsigned int d = 1;
+    jp4.getTagURational(TAG, &n, &d);
+    *DEST = dng_urational(n,d);
+  }
 }
 
 inline void SET_DNG_TAG_SRATIONAL(const JP4& jp4, ExifTag TAG, dng_srational* DEST) {
-  if (jp4.hasTag(TAG)) {                     
-    int n = 0; int d = 1;                    
-    jp4.getTagSRational(TAG, &n, &d);         
-    *DEST = dng_srational(n,d);          
-  }                                          
+  if (jp4.hasTag(TAG)) {
+    int n = 0; int d = 1;
+    jp4.getTagSRational(TAG, &n, &d);
+    *DEST = dng_srational(n,d);
+  }
 }
 
 inline void SET_DNG_TAG_DT_INFO(const JP4& jp4, ExifTag TAG, ExifTag SUBSEC_TAG, dng_date_time_info* DEST) {
-  if (jp4.hasTag(TAG)) {                     
-    string s = jp4.getTagString(TAG);        
-    dng_date_time dt;                        
-    dt.Parse(s.c_str());           
+  if (jp4.hasTag(TAG)) {
+    string s = jp4.getTagString(TAG);
+    dng_date_time dt;
+    dt.Parse(s.c_str());
 
-    dng_date_time_info dt_info;              
-    dt_info.SetDateTime(dt);                
+    dng_date_time_info dt_info;
+    dt_info.SetDateTime(dt);
 
     if (jp4.hasTag(SUBSEC_TAG)) {
-      string subsec = jp4.getTagString(SUBSEC_TAG);        
+      string subsec = jp4.getTagString(SUBSEC_TAG);
       dng_string dngSubsec;
       dngSubsec.Set(subsec.c_str());
       dt_info.SetSubseconds(dngSubsec);
     }
 
     *DEST = dt_info;
-  }                                          
-} 
+  }
+}
 
 ExifEntry* FIND_GPS_TAG(const JP4& jp4, int TAG) {
   ExifData* ed = jp4.exifData();
@@ -127,9 +127,9 @@ inline void SET_DNG_TAG_GPS_STRING(const JP4& jp4, int TAG, dng_string* DEST) {
   char value[e->size];
   exif_entry_get_value(e, value, e->size);
 
-  dng_string s;                            
-  s.Set(value);    
-  *DEST = s;                          
+  dng_string s;
+  s.Set(value);
+  *DEST = s;
 }
 
 
@@ -160,13 +160,13 @@ inline void SET_DNG_TAG_GPS_URATIONAL_ARRAY_3(const JP4& jp4, int TAG, dng_urati
   ExifRational r3 = exif_get_rational(e->data+2*exif_format_get_size(e->format), exif_data_get_byte_order(jp4.exifData()));
   dng_urational dngR3(r3.numerator, r3.denominator);
   (*DEST)[2] = dngR3;
-}    
+}
 
-void DNGWriter::write(const JP4& jp4, const string& dngFilename, int bayerShift) {
+void DNGWriter::write(const JP4& jp4, const string& dngFilename, int bayerShift, bool disable_dng_rotations) {
 
   // TODO
   unsigned int whitePoint = 0xffff;
-  
+
   // DNG memory allocation and initialization
 
   dng_memory_allocator memalloc(gDefaultDNGMemoryAllocator);
@@ -211,7 +211,7 @@ void DNGWriter::write(const JP4& jp4, const string& dngFilename, int bayerShift)
   ifd.fBlackLevel[0][0][3]       = jp4.makerNote().black[3]*256;
 
   ifd.fWhiteLevel[0]             = whitePoint;
-  
+
   ifd.fLinearizationTableType   = ttShort;
   ifd.fLinearizationTableCount  = 256;
 
@@ -258,7 +258,7 @@ void DNGWriter::write(const JP4& jp4, const string& dngFilename, int bayerShift)
   gain[3] = jp4.makerNote().gain[3];
 
   negative->SetAnalogBalance(gain);
-  
+
   // bayer
   negative->SetRGB();
 
@@ -288,6 +288,9 @@ void DNGWriter::write(const JP4& jp4, const string& dngFilename, int bayerShift)
     negative->SetBayerMosaic(3);
     negative->SetBaseOrientation(dng_orientation::Rotate180());
   }
+
+  if( disable_dng_rotations )
+      negative->SetBaseOrientation(dng_orientation::Normal());
 
   // Override bayer shift if asked
   if (bayerShift != -1)
@@ -322,7 +325,7 @@ void DNGWriter::write(const JP4& jp4, const string& dngFilename, int bayerShift)
   SET_DNG_TAG_DT_INFO (jp4, EXIF_TAG_DATE_TIME,           EXIF_TAG_SUB_SEC_TIME,           &exif->fDateTime);
   SET_DNG_TAG_DT_INFO (jp4, EXIF_TAG_DATE_TIME_ORIGINAL,  EXIF_TAG_SUB_SEC_TIME_ORIGINAL,  &exif->fDateTimeOriginal);
   SET_DNG_TAG_DT_INFO (jp4, EXIF_TAG_DATE_TIME_DIGITIZED, EXIF_TAG_SUB_SEC_TIME_DIGITIZED, &exif->fDateTimeDigitized);
-		
+
   SET_DNG_TAG_STRING    (jp4, EXIF_TAG_IMAGE_DESCRIPTION,         &exif->fImageDescription);
   SET_DNG_TAG_STRING    (jp4, EXIF_TAG_MAKE,                      &exif->fMake);
   SET_DNG_TAG_STRING    (jp4, EXIF_TAG_MODEL,                     &exif->fModel);
@@ -365,12 +368,12 @@ void DNGWriter::write(const JP4& jp4, const string& dngFilename, int bayerShift)
   SET_DNG_TAG_UINT32    (jp4, EXIF_TAG_SUBJECT_DISTANCE_RANGE,    &exif->fSubjectDistanceRange);
   SET_DNG_TAG_UINT32    (jp4, EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM, &exif->fFocalLengthIn35mmFilm);
   SET_DNG_TAG_UINT32    (jp4, EXIF_TAG_ISO_SPEED_RATINGS,         &exif->fISOSpeedRatings[0]);
-  
+
   if (jp4.hasTag(EXIF_TAG_SUBJECT_AREA)) {
     exif->fSubjectAreaCount = 1;
     exif->fSubjectArea[0] = jp4.getTagUInt(EXIF_TAG_SUBJECT_AREA);
   }
-  
+
   SET_DNG_TAG_UINT32    (jp4, EXIF_TAG_COMPONENTS_CONFIGURATION,    &exif->fComponentsConfiguration);
   SET_DNG_TAG_URATIONAL (jp4, EXIF_TAG_COMPRESSED_BITS_PER_PIXEL,   &exif->fCompresssedBitsPerPixel);
   SET_DNG_TAG_UINT32    (jp4, EXIF_TAG_PIXEL_X_DIMENSION,           &exif->fPixelXDimension);
@@ -380,7 +383,7 @@ void DNGWriter::write(const JP4& jp4, const string& dngFilename, int bayerShift)
   SET_DNG_TAG_UINT32    (jp4, EXIF_TAG_FOCAL_PLANE_RESOLUTION_UNIT, &exif->fFocalPlaneResolutionUnit);
 
   SET_DNG_TAG_GPS_URATIONAL_ARRAY_3 (jp4, EXIF_TAG_GPS_LATITUDE,       &exif->fGPSLatitude);
-  SET_DNG_TAG_GPS_URATIONAL_ARRAY_3 (jp4, EXIF_TAG_GPS_LONGITUDE,      &exif->fGPSLongitude);		
+  SET_DNG_TAG_GPS_URATIONAL_ARRAY_3 (jp4, EXIF_TAG_GPS_LONGITUDE,      &exif->fGPSLongitude);
   SET_DNG_TAG_GPS_URATIONAL_ARRAY_3 (jp4, EXIF_TAG_GPS_TIME_STAMP,     &exif->fGPSTimeStamp);
   SET_DNG_TAG_GPS_URATIONAL_ARRAY_3 (jp4, EXIF_TAG_GPS_DEST_LATITUDE,  &exif->fGPSDestLatitude);
   SET_DNG_TAG_GPS_URATIONAL_ARRAY_3 (jp4, EXIF_TAG_GPS_DEST_LONGITUDE, &exif->fGPSDestLongitude);
@@ -411,7 +414,7 @@ void DNGWriter::write(const JP4& jp4, const string& dngFilename, int bayerShift)
   SET_DNG_TAG_GPS_STRING    (jp4, EXIF_TAG_GPS_AREA_INFORMATION,   &exif->fGPSAreaInformation);
   SET_DNG_TAG_GPS_STRING    (jp4, EXIF_TAG_GPS_DATE_STAMP,         &exif->fGPSDateStamp);
   SET_DNG_TAG_GPS_UINT32    (jp4, EXIF_TAG_GPS_DIFFERENTIAL,       &exif->fGPSDifferential);
-		
+
   SET_DNG_TAG_STRING (jp4, EXIF_TAG_INTEROPERABILITY_INDEX,    &exif->fInteroperabilityIndex);
   SET_DNG_TAG_UINT32 (jp4, EXIF_TAG_INTEROPERABILITY_VERSION,  &exif->fInteroperabilityVersion);
 
@@ -450,4 +453,3 @@ void DNGWriter::write(const JP4& jp4, const string& dngFilename, int bayerShift)
   writer.WriteDNG(host, filestream, *negative.Get(), thumbnail, ccUncompressed, &previewList);
 
 }
-
